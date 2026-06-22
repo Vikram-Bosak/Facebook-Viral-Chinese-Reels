@@ -25,3 +25,9 @@ workspace/
 auth_venv/
 client_secrets.json
 youtube_token.json
+
+# Test files
+test/
+*.mp4
+*.wav
+*.mp3

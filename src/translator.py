@@ -227,68 +227,91 @@ def _create_translation_batches(segments, max_chars=2000):
 
 
 def _translate_batch(texts):
-    """Translate a batch of Chinese texts to English using OpenAI."""
+    """Translate a batch of Chinese texts to English using free Google Translate."""
     try:
-        from openai import OpenAI
-
-        api_key = os.environ.get('OPENAI_API_KEY')
-        if not api_key:
-            logger.warning("OPENAI_API_KEY not found, returning original texts")
-            return texts
-
-        base_url = os.environ.get('OPENAI_API_BASE_URL')
-        model = os.environ.get('OPENAI_API_MODEL', 'gpt-3.5-turbo')
-
-        if base_url:
-            client = OpenAI(api_key=api_key, base_url=base_url)
-        else:
-            client = OpenAI(api_key=api_key)
-
-        # Number each text for easy parsing
-        numbered_texts = "\n".join([f"{i+1}. {t}" for i, t in enumerate(texts)])
-
-        system_prompt = (
-            "You are a professional Chinese to English translator. "
-            "Translate the following Chinese text segments into natural, fluent English. "
-            "Keep translations concise and suitable for social media subtitles. "
-            "Maintain the emotional tone and meaning. "
-            "Return ONLY the translations, one per line, numbered to match the input."
-        )
-
-        user_prompt = f"Translate these Chinese segments to English:\n\n{numbered_texts}"
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.3
-        )
-
-        result = response.choices[0].message.content.strip()
-
-        # Parse numbered translations
+        # === FREE OPTION: Google Translate via deep-translator ===
+        from deep_translator import GoogleTranslator
+        
+        translator = GoogleTranslator(source='zh-CN', target='en')
+        
         translations = []
-        for line in result.split('\n'):
-            line = line.strip()
-            if not line:
+        for text in texts:
+            if not text.strip():
+                translations.append(text)
                 continue
-            # Remove numbering (e.g., "1. " or "1)")
-            import re
-            cleaned = re.sub(r'^\d+[\.\)]\s*', '', line)
-            if cleaned:
-                translations.append(cleaned)
+            try:
+                translated = translator.translate(text)
+                translations.append(translated if translated else text)
+            except Exception as e:
+                logger.warning(f"Translation failed for segment: {e}")
+                translations.append(text)
+        
+        logger.info(f"Translated {len(translations)} segments via Google Translate (free)")
+        return translations
 
-        # Ensure we have the right number of translations
-        while len(translations) < len(texts):
-            translations.append(texts[len(translations)])  # Fallback to Chinese
-
-        return translations[:len(texts)]
-
+    except ImportError:
+        logger.error("deep-translator not installed. Run: pip install deep-translator")
+        return texts
     except Exception as e:
-        logger.error(f"Translation API error: {e}")
-        return texts  # Return original Chinese on failure
+        logger.error(f"Free translation error: {e}")
+        
+        # === PAID FALLBACK: OpenAI API ===
+        try:
+            from openai import OpenAI
+
+            api_key = os.environ.get('OPENAI_API_KEY')
+            if not api_key:
+                logger.warning("No translation API available, returning original texts")
+                return texts
+
+            base_url = os.environ.get('OPENAI_API_BASE_URL')
+            model = os.environ.get('OPENAI_API_MODEL', 'gpt-3.5-turbo')
+
+            if base_url:
+                client = OpenAI(api_key=api_key, base_url=base_url)
+            else:
+                client = OpenAI(api_key=api_key)
+
+            numbered_texts = "\n".join([f"{i+1}. {t}" for i, t in enumerate(texts)])
+
+            system_prompt = (
+                "You are a professional Chinese to English translator. "
+                "Translate the following Chinese text segments into natural, fluent English. "
+                "Keep translations concise and suitable for social media subtitles. "
+                "Return ONLY the translations, one per line, numbered to match the input."
+            )
+
+            user_prompt = f"Translate these Chinese segments to English:\n\n{numbered_texts}"
+
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.3
+            )
+
+            result = response.choices[0].message.content.strip()
+
+            import re
+            translations = []
+            for line in result.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                cleaned = re.sub(r'^\d+[\.\)]\s*', '', line)
+                if cleaned:
+                    translations.append(cleaned)
+
+            while len(translations) < len(texts):
+                translations.append(texts[len(translations)])
+
+            return translations[:len(texts)]
+
+        except Exception as e2:
+            logger.error(f"OpenAI translation also failed: {e2}")
+            return texts
 
 
 # ============================================================
@@ -389,7 +412,8 @@ def _format_srt_time(seconds):
 
 def merge_audio_with_video(video_path, audio_path, output_path=None):
     """
-    Replace original audio with translated English audio.
+    Mix original background audio with translated English TTS voice.
+    Original audio volume lowered, English voice overlaid on top.
 
     Args:
         video_path: Original video file
@@ -397,13 +421,13 @@ def merge_audio_with_video(video_path, audio_path, output_path=None):
         output_path: Output video path
 
     Returns:
-        Path to output video with English audio
+        Path to output video with mixed audio
     """
     if output_path is None:
         base, ext = os.path.splitext(video_path)
         output_path = f"{base}_english{ext}"
 
-    logger.info(f"Merging translated audio with video...")
+    logger.info(f"Merging translated audio with video (keeping original background)...")
 
     try:
         # Get original video duration
@@ -416,28 +440,84 @@ def merge_audio_with_video(video_path, audio_path, output_path=None):
         result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=30)
         original_duration = float(result.stdout.strip()) if result.stdout.strip() else 60
 
-        # Merge: keep original video, replace audio, trim to original duration
+        # Get TTS audio duration
+        probe_cmd2 = [
+            'ffprobe', '-v', 'error',
+            '-show_entries', 'format=duration',
+            '-of', 'csv=p=0',
+            audio_path
+        ]
+        result2 = subprocess.run(probe_cmd2, capture_output=True, text=True, timeout=30)
+        tts_duration = float(result2.stdout.strip()) if result2.stdout.strip() else 0
+
+        logger.info(f"Video duration: {original_duration:.1f}s, TTS duration: {tts_duration:.1f}s")
+
+        # Step 1: Extract original audio and lower volume (background music)
+        original_audio = os.path.join(tempfile.gettempdir(), "original_bg.wav")
+        extract_cmd = [
+            'ffmpeg', '-y',
+            '-i', video_path,
+            '-vn',
+            '-af', 'volume=0.25',   # Lower original volume to 25% (background)
+            '-ar', '44100',
+            '-ac', '2',
+            original_audio
+        ]
+        subprocess.run(extract_cmd, capture_output=True, text=True, timeout=60)
+
+        # Step 2: Prepare TTS audio (pad with silence if needed, set volume)
+        tts_audio = os.path.join(tempfile.gettempdir(), "tts_prepared.wav")
+        tts_cmd = [
+            'ffmpeg', '-y',
+            '-i', audio_path,
+            '-af', f'volume=1.5,apad=whole_dur={original_duration}',
+            '-ar', '44100',
+            '-ac', '2',
+            tts_audio
+        ]
+        subprocess.run(tts_cmd, capture_output=True, text=True, timeout=60)
+
+        # Step 3: Mix original background + English TTS voice
+        mixed_audio = os.path.join(tempfile.gettempdir(), "mixed_audio.wav")
+        mix_cmd = [
+            'ffmpeg', '-y',
+            '-i', original_audio,   # Background music (25% volume)
+            '-i', tts_audio,        # English voice (100% volume)
+            '-filter_complex',
+            '[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0',
+            '-ar', '44100',
+            '-ac', '2',
+            mixed_audio
+        ]
+        subprocess.run(mix_cmd, capture_output=True, text=True, timeout=60)
+
+        # Step 4: Merge mixed audio with video
         cmd = [
             'ffmpeg', '-y',
             '-i', video_path,      # Original video
-            '-i', audio_path,      # New English audio
+            '-i', mixed_audio,     # Mixed audio (background + English voice)
             '-c:v', 'copy',        # Copy video stream (no re-encode)
             '-c:a', 'aac',         # Encode audio as AAC
-            '-b:a', '128k',        # Audio bitrate
+            '-b:a', '192k',        # Higher audio bitrate
             '-map', '0:v:0',       # Use video from first input
-            '-map', '1:a:0',       # Use audio from second input
-            '-shortest',           # Trim to shortest stream
+            '-map', '1:a:0',       # Use mixed audio
             '-t', str(original_duration),  # Limit to original duration
+            '-shortest',           # Trim to shortest stream
             output_path
         ]
 
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
+        # Cleanup temp files
+        for f in [original_audio, tts_audio, mixed_audio]:
+            if os.path.exists(f):
+                os.remove(f)
+
         if result.returncode != 0:
             logger.error(f"FFmpeg merge failed: {result.stderr}")
             return None
 
-        logger.info(f"Video with English audio created: {output_path}")
+        logger.info(f"Video with mixed audio created: {output_path}")
         return output_path
 
     except Exception as e:
