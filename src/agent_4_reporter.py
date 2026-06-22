@@ -22,14 +22,14 @@ def send_telegram_message(message):
     try:
         response = requests.post(url, json=payload, timeout=30)
         response.raise_for_status()
-        print("Successfully sent unified Telegram report.")
+        print("Successfully sent Telegram report.")
         return True
     except requests.exceptions.RequestException as e:
         print(f"Failed to send Telegram message: {e}")
         return False
 
 def main():
-    print("Starting Agent 4: Unified Reporter")
+    print("Starting Agent 4: Reporter")
     report_path = "workspace/report.json"
     
     if os.path.exists(report_path):
@@ -55,31 +55,32 @@ def main():
     yt_status = "Success" if "youtube.com" in yt_url or "youtu.be" in yt_url else "Failed / N/A"
     
     # GitHub Action Variables
-    repo = os.environ.get('GITHUB_REPOSITORY', 'Vikram-Bosak/Facebook-Viral-Chinese-Reels')
+    repo = os.environ.get('GITHUB_REPOSITORY', 'Facebook-Viral-Chinese-Reels')
     run_id = os.environ.get('GITHUB_RUN_ID', 'UNKNOWN')
     repo_url = f"https://github.com/{repo}"
     run_url = f"{repo_url}/actions/runs/{run_id}"
     
-    emoji_status = "✅" if upload_status == "成功" or upload_status == "Success" else "❌"
+    emoji_status = "✅" if upload_status == "Success" else "❌"
     
-    yt_status_cn = "成功" if yt_status == "Success" else "失败"
+    yt_status_label = "Success" if yt_status == "Success" else "Failed"
+    
     message = (
-        f"{emoji_status} <b>📤 管道运行完成</b>\n\n"
-        f"🎬 <b>视频名称:</b>\n{video_name}\n\n"
-        f"📥 <b>下载状态:</b> {download_status}\n"
-        f"✂️ <b>编辑状态:</b> {editing_status}\n"
-        f"📤 <b>Facebook 上传状态:</b> {upload_status}\n"
-        f"📤 <b>YouTube 上传状态:</b> {yt_status_cn}\n\n"
-        f"🏷️ <b>SEO 标题:</b>\n{seo_title}\n\n"
-        f"📝 <b>描述:</b>\n{description}\n\n"
-        f"🔗 <b>Facebook Reel 链接:</b>\n{fb_url}\n\n"
-        f"▶️ <b>YouTube 视频链接:</b>\n{yt_url}\n\n"
-        f"📦 <b>GitHub 仓库:</b>\n{repo_url}\n\n"
-        f"📄 <b>工作流运行:</b>\n{run_url}"
+        f"{emoji_status} <b>📤 Pipeline Run Complete</b>\n\n"
+        f"🎬 <b>Video Name:</b>\n{video_name}\n\n"
+        f"📥 <b>Download Status:</b> {download_status}\n"
+        f"✂️ <b>Editing Status:</b> {editing_status}\n"
+        f"📤 <b>Facebook Upload:</b> {upload_status}\n"
+        f"📤 <b>YouTube Upload:</b> {yt_status_label}\n\n"
+        f"🏷️ <b>SEO Title:</b>\n{seo_title}\n\n"
+        f"📝 <b>Description:</b>\n{description}\n\n"
+        f"🔗 <b>Facebook Reel:</b>\n{fb_url}\n\n"
+        f"▶️ <b>YouTube Video:</b>\n{yt_url}\n\n"
+        f"📦 <b>GitHub Repo:</b>\n{repo_url}\n\n"
+        f"📄 <b>Workflow Run:</b>\n{run_url}"
     )
     
-    if "No new video" in download_status or "无新视频" in download_status:
-        print("没有新视频可处理。跳过 Telegram 通知以避免打扰。")
+    if "No new video" in download_status:
+        print("No new video to process. Skipping Telegram notification.")
     else:
         send_telegram_message(message)
     

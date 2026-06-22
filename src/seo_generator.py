@@ -16,6 +16,7 @@ def clean_filename(filename):
 def generate_seo_metadata(filename, media_type='reel'):
     """
     Generates SEO title, description, and hashtags based on the video filename.
+    Optimized for US audience with English content.
     Returns a dictionary with 'title', 'description', and 'hashtags'.
     """
     api_key = os.environ.get('OPENAI_API_KEY')
@@ -33,28 +34,30 @@ def generate_seo_metadata(filename, media_type='reel'):
         
     topic = clean_filename(filename)
     
-    content_type_str = "Chinese Facebook Reel" if media_type == 'reel' else "Chinese Facebook Photo Post"
+    content_type_str = "Facebook Reel" if media_type == 'reel' else "Facebook Photo Post"
     video_str = "short vertical video (Facebook Reel / YouTube Shorts)" if media_type == 'reel' else "stunning photo/image"
-    hashtag_str = "#Reels #短视频" if media_type == 'reel' else "#PhotoOfTheDay #短视频"
+    hashtag_str = "#Reels #viral" if media_type == 'reel' else "#PhotoOfTheDay #viral"
     
     system_prompt = (
-        f"You are an expert Social Media Manager specializing in Chinese viral content for Facebook and YouTube Shorts targeting Chinese-speaking audiences. "
-        "Your goal is to maximize engagement, click-through rate, and virality among Chinese-speaking viewers worldwide. "
-        "All generated titles, descriptions, and hashtags must be in Chinese (中文) unless the topic is clearly English-focused."
+        "You are an expert Social Media Manager specializing in viral content for Facebook and YouTube Shorts "
+        "targeting a United States audience. "
+        "Your goal is to maximize engagement, click-through rate, and virality among American viewers. "
+        "All generated titles, descriptions, and hashtags must be in English. "
+        "Use emotionally engaging words, curiosity gaps, and trending formats popular on US social media."
     )
     
     user_prompt = f"""
     Generate viral SEO metadata for a {video_str} about: "{topic}".
     
     Requirements:
-    1. Title (标题): Short, catchy, uses emotional words, includes relevant emojis. Written in Chinese (中文). Max 60 characters.
-    2. Description (描述): 1-2 short sentences in Chinese that create curiosity and encourage engagement.
-    3. Hashtags (标签): 5-8 highly relevant and trending hashtags. Mix Chinese trending tags with topic-specific tags. Include {hashtag_str}.
+    1. Title: Short, catchy, uses emotional words, includes relevant emojis. Written in English. Max 60 characters.
+    2. Description: 1-2 short sentences in English that create curiosity and encourage engagement. Use American English.
+    3. Hashtags: 5-8 highly relevant and trending hashtags for US audience. Mix viral tags with topic-specific tags. Include {hashtag_str}.
     
-    Chinese Hashtag Guidelines:
-    - Always include popular Chinese viral tags such as: #中国 #中国风 #抖音 #短视频 #热门 #推荐 #火了 #笑死我了 #涨知识 #治愈
-    - Add topic-specific Chinese tags where relevant
-    - Use both simplified Chinese hashtags and English viral hashtags for maximum reach
+    US Audience Hashtag Guidelines:
+    - Always include popular US viral tags: #viral #trending #fyp #foryou #explore #reels #shorts
+    - Add topic-specific tags where relevant
+    - Use English hashtags for maximum reach in the US market
     
     Format the output exactly as JSON:
     {{
@@ -90,8 +93,8 @@ def generate_seo_metadata(filename, media_type='reel'):
         
         return {
             'title': data.get('title', topic.title()),
-            'description': data.get('description', f"精彩视频关于 {topic}！🔥"),
-            'hashtags': data.get('hashtags', "#Reels #短视频 #热门 #viral #trending")
+            'description': data.get('description', f"Incredible video about {topic}! Must see!"),
+            'hashtags': data.get('hashtags', "#viral #trending #reels #shorts #fyp #foryou")
         }
         
     except Exception as e:
@@ -133,7 +136,7 @@ def generate_fallback_metadata(filename):
         'sunrise', 'lake', 'waterfall', 'canyon'
     }
     
-    chinese_culture_keywords = {
+    culture_keywords = {
         'chinese', 'china', 'beijing', 'shanghai', 'temple', 'kungfu', 'martial',
         'dragon', 'lantern', 'tea', 'silk', 'wall', 'panda', 'dumpling', 'noodle',
         'dance', 'music', 'opera', 'calligraphy', 'painting', 'festival', 'newyear',
@@ -148,83 +151,83 @@ def generate_fallback_metadata(filename):
     
     is_wildlife = any(k in wildlife_keywords for k in keywords)
     is_nature = any(k in nature_keywords for k in keywords)
-    is_chinese_culture = any(k in chinese_culture_keywords for k in keywords)
+    is_culture = any(k in culture_keywords for k in keywords)
     is_food = any(k in food_keywords for k in keywords)
     
-    # Common Chinese viral hashtags used across all categories
-    common_chinese_tags = ['#中国', '#中国风', '#短视频', '#热门', '#推荐', '#火了', '#viral', '#trending']
+    # Common viral hashtags for US audience
+    common_viral_tags = ['#viral', '#trending', '#fyp', '#foryou', '#explore', '#reels', '#shorts']
     
-    # Pre-saved SEO Patterns (Titles & Descriptions) - Chinese versions
+    # Pre-saved SEO Patterns (Titles & Descriptions) - English versions for US audience
     if is_wildlife:
         titles = [
-            "太震撼了！{topic}的真面目！😱",
-            "{topic}的力量简直不可思议！🔥",
-            "POV：近距离目睹{topic}！🤯",
-            "大自然最强大的猎手：{topic}！💪",
-            "这段{topic}的视频让你目瞪口呆！🚨"
+            "Wait For It... This {topic} Is INSANE! 😱",
+            "POV: You're Face to Face With a {topic}! 🤯",
+            "This {topic} Just Did Something UNTHINKABLE! 🔥",
+            "Nature's Most Powerful {topic} Caught on Camera! 💪",
+            "You Won't BELIEVE What This {topic} Just Did! 🚨"
         ]
         descriptions = [
-            "感受{topic}在野外的原始力量与美感。大自然永远让人惊叹！🌍",
-            "近距离拍摄{topic}！难得一见的野生动物精彩瞬间。🐾",
-            "这个{topic}的瞬间简直太不可思议了！绝对震撼！😱"
+            "The raw power of nature captured in one incredible moment. This {topic} video will leave you speechless! 🌍",
+            "Close-up footage of a {topic} that's going viral right now. Nature never ceases to amaze! 🐾",
+            "This is hands down the most incredible {topic} footage you'll see today. Share with someone who needs to see this! 😱"
         ]
-        cat_tags = ['#野生动物', '#大自然', '#动物世界', '#非洲', '#猎手', '#wildlifephotography', '#naturelovers', '#wild']
+        cat_tags = ['#wildlife', '#nature', '#animals', '#safari', '#predator', '#wildlifephotography', '#naturelovers', '#wild']
     elif is_nature:
         titles = [
-            "绝美风景！{topic}的壮丽瞬间！🏔️",
-            "{topic}的美简直令人窒息！✨",
-            "大自然最美的画卷：{topic}！🌍",
-            "沉浸在这震撼的{topic}美景中！🌿",
-            "这个{topic}的景色太梦幻了！😍"
+            "This {topic} View Is Absolutely BREATHTAKING! 😍",
+            "The Most Beautiful {topic} You'll See Today! ✨",
+            "Nature's Masterpiece: {topic} at Its Finest! 🌎",
+            "I Can't Stop Watching This {topic}! 🌿",
+            "This {topic} Is Pure Magic! You Need to See This! 😍"
         ]
         descriptions = [
-            "深呼吸，感受{topic}的壮丽风光与宁静。🍃",
-            "这些{topic}的美景让你想立刻出发旅行！纯粹的美！✨",
-            "大自然是最伟大的艺术家，{topic}就是一幅杰作！🌍"
+            "Take a deep breath and immerse yourself in the beauty of {topic}. Nature is the best healer! 🍃",
+            "These stunning {topic} views will make you want to book a flight right now! Pure beauty! ✨",
+            "Mother Nature really outdid herself with this {topic}. Share the beauty! 🌎"
         ]
-        cat_tags = ['#风景', '#美景', '#自然风光', '#旅行', '#治愈', '#earth', '#travel', '#exploring']
-    elif is_chinese_culture:
+        cat_tags = ['#nature', '#travel', '#beautiful', '#landscape', '#explore', '#earth', '#wanderlust', '#scenic']
+    elif is_culture:
         titles = [
-            "太惊艳了！{topic}的中国风！🐉",
-            "这就是中华文化的魅力！{topic}！🏮",
-            "传统之美：{topic}让你感受中国风！🎎",
-            "太美了！{topic}的古典韵味！✨",
-            "这个{topic}视频火遍全网！🔥"
+            "This {topic} Will Blow Your Mind! So Beautiful! 😱",
+            "The Most Incredible {topic} You've Ever Seen! 🔥",
+            "I Can't Believe This {topic} Is Real! So Stunning! ✨",
+            "This {topic} Is Going VIRAL! Watch Until the End! 🤯",
+            "You've NEVER Seen a {topic} Like This Before! 💥"
         ]
         descriptions = [
-            "感受{topic}的中国传统文化之美，东方魅力令人陶醉！🏮",
-            "中华文化的博大精深，{topic}就是最好的证明！🐉",
-            "这段{topic}的视频太惊艳了！传统文化就是这么有魅力！✨"
+            "The beauty and elegance of {topic} captured in one incredible video. This is why culture matters! 🌏",
+            "Stunning footage of {topic} that's breaking the internet right now. Must watch! 🎌",
+            "This {topic} video is absolutely mesmerizing. Share the beauty with the world! ✨"
         ]
-        cat_tags = ['#中国风', '#传统文化', '#中华文化', '#东方美学', '#古典', '#chineseculture', '#hanfu', '#traditional']
+        cat_tags = ['#culture', '#beautiful', '#art', '#traditional', '#history', '#world', '#travel', '#amazing']
     elif is_food:
         titles = [
-            "太香了！{topic}的做法绝了！🍜",
-            "这个{topic}看饿了！🤤",
-            "舌尖上的{topic}！中国传统美食！🥢",
-            "你绝对没吃过这么正宗的{topic}！🔥",
-            "这个{topic}视频太治愈了！😋"
+            "This {topic} Looks INCREDIBLE! I Need This NOW! 🤤",
+            "Wait Until You See How This {topic} Is Made! 😱",
+            "The Most Satisfying {topic} Video You'll See Today! 🔥",
+            "I Tried This {topic} And It Changed My Life! 🤯",
+            "This {topic} Is Making Me SO Hungry! 🍽️"
         ]
         descriptions = [
-            "看着这诱人的{topic}，口水都要流下来了！🥢",
-            "中国传统美食的精髓：{topic}！每一口都是幸福！🍜",
-            "这个{topic}的做法太绝了！收藏起来学着做！😋"
+            "This {topic} looks absolutely delicious! Foodies, you need to see this! 🤤",
+            "The art of making {topic} captured perfectly. This is food porn at its finest! 🍕",
+            "Warning: Do NOT watch this video hungry! This {topic} is incredible! 🔥"
         ]
-        cat_tags = ['#美食', '#中国美食', '#舌尖上的中国', '#家常菜', '#吃货', '#foodie', '#chinesefood', '#cooking']
+        cat_tags = ['#food', '#foodie', '#cooking', '#recipe', '#yummy', '#delicious', '#foodporn', '#chef']
     else:
         titles = [
-            "太震撼了！{topic}的真面目！😱",
-            "等一下！看到最后{topic}！🚨",
-            "这个{topic}的视频太疯狂了！🤯",
-            "快来看！{topic}！🎬",
-            "这个{topic}的片段改变了我的认知！🔥"
+            "Wait For It... This {topic} Is CRAZY! 😱",
+            "POV: You Witness Something INSANE! {topic}! 🤯",
+            "This {topic} Video Is Going VIRAL Right Now! 🔥",
+            "You Won't BELIEVE What Just Happened! {topic}! 🚨",
+            "This Is the Most {topic} Thing I've EVER Seen! 💥"
         ]
         descriptions = [
-            "这段{topic}的视频火爆全网！太震撼了！💥",
-            "这个{topic}简直太不可思议了！必看视频！👇",
-            "精彩的{topic}短视频！分享给需要看到的朋友！"
+            "This {topic} video is breaking the internet! You have to see this to believe it! 💥",
+            "The most incredible {topic} footage you'll see today. Share with your friends! 👇",
+            "This {topic} moment is absolutely unreal. Don't miss this! 🔥"
         ]
-        cat_tags = ['#短视频', '#热门', '#推荐', '#涨知识', '#治愈', '#搞笑']
+        cat_tags = ['#viral', '#trending', '#fyp', '#foryou', '#explore', '#reels', '#shorts', '#amazing']
         
     # Get deterministic choices based on filename to keep output consistent per video
     title_template = get_deterministic_choice(filename, titles)
@@ -238,60 +241,60 @@ def generate_fallback_metadata(filename):
         
     base_desc = desc_template.format(topic=topic_title)
     
-    # Chinese CTAs (Call to Action)
+    # US-style CTAs (Call to Action)
     ctas = [
-        "觉得有用就点赞收藏！❤️",
-        "关注我，每天更新精彩内容！📲",
-        "转发给需要看到的朋友！👇",
-        "你怎么看？评论区告诉我！💬",
-        "喜欢就分享出去吧！✈️",
-        "双击屏幕给个赞！👍",
-        "记得关注，不要错过更多精彩！🔔"
+        "Like & Share if this blew your mind! ❤️",
+        "Follow for more amazing content! 📲",
+        "Tag someone who needs to see this! 👇",
+        "Drop a comment if you agree! 💬",
+        "Share this with your friends! ✈️",
+        "Smash that like button! 👍",
+        "Don't forget to follow for daily updates! 🔔"
     ]
     cta = get_deterministic_choice(filename + "_cta", ctas)
     description = f"{base_desc}\n\n{cta}"
     
-    # Keywords Database mapping (Chinese viral tags)
+    # Keywords Database mapping (US audience tags)
     KEYWORDS_DATABASE = {
-        'tiger': ['老虎', '大猫', '猛兽', 'savethe-tigers'],
-        'lion': ['狮子', '百兽之王', '大猫', 'wildlions'],
-        'leopard': ['豹子', '花豹', '山中幽灵'],
-        'cheetah': ['猎豹', '速度', '非洲草原'],
-        'elephant': ['大象', '非洲象', 'gentlegiants'],
-        'shark': ['鲨鱼', '海底世界', 'underwater'],
-        'whale': ['鲸鱼', '大海', '海洋生物'],
-        'gorilla': ['大猩猩', '灵长类', 'silverback'],
-        'eagle': ['老鹰', '猛禽', '飞翔'],
-        'hunt': ['狩猎', '捕食者', '生存'],
-        'jungle': ['丛林', '热带雨林', '原始森林'],
-        'mountain': ['山', '登山', '高山', '风景'],
-        'ocean': ['大海', '海底', '海洋'],
-        'panda': ['大熊猫', '国宝', '可爱'],
-        'dragon': ['龙', '中国龙', '传统文化'],
-        'tea': ['茶', '中国茶', '茶道'],
-        'silk': ['丝绸', '丝绸之路', '传统工艺'],
-        'dance': ['舞蹈', '中国舞', '古典舞'],
-        'music': ['音乐', '中国风音乐', '古风'],
-        'temple': ['寺庙', '古建筑', '中国古建筑'],
-        'noodle': ['面条', '手工面', '中国面食'],
-        'dumpling': ['饺子', '包子', '中国传统美食'],
-        'hotpot': ['火锅', '麻辣火锅', '四川美食'],
-        'cooking': ['做饭', '烹饪', '中国菜'],
-        'food': ['美食', '好吃', '中国美食'],
-        'spicy': ['辣', '麻辣', '川菜'],
-        'fried': ['炒', '煎', '油炸'],
-        'soup': ['汤', '煲汤', '养生汤'],
-        'sweet': ['甜', '甜品', '中国甜点'],
-        'spring': ['春天', '春季', '万物复苏'],
-        'autumn': ['秋天', '秋色', '金秋'],
-        'ancient': ['古代', '古风', '穿越'],
-        'traditional': ['传统', '古典', '中国传统文化'],
-        'festival': ['节日', '中国节', '传统节日'],
+        'tiger': ['tigers', 'bigcats', 'savethetigers'],
+        'lion': ['lions', 'kingofthejungle', 'wildlions'],
+        'leopard': ['leopards', 'bigcats', 'wildlife'],
+        'cheetah': ['cheetahs', 'speed', 'africansafari'],
+        'elephant': ['elephants', 'gentlegiants', 'africanwildlife'],
+        'shark': ['sharks', 'underwater', 'oceanlife'],
+        'whale': ['whales', 'ocean', 'marinelife'],
+        'gorilla': ['gorillas', 'primates', 'silverback'],
+        'eagle': ['eagles', 'raptors', 'birdsofprey'],
+        'hunt': ['hunting', 'predators', 'survival'],
+        'jungle': ['jungle', 'rainforest', 'wildnature'],
+        'mountain': ['mountains', 'hiking', 'adventure'],
+        'ocean': ['ocean', 'sea', 'underwater'],
+        'panda': ['pandas', 'cutest', 'endangered'],
+        'dragon': ['dragon', 'mythical', 'fantasy'],
+        'tea': ['tea', 'tealover', 'teatime'],
+        'silk': ['silk', 'luxury', 'craftsmanship'],
+        'dance': ['dance', 'dancing', 'viral'],
+        'music': ['music', 'musical', 'song'],
+        'temple': ['temple', 'ancient', 'architecture'],
+        'noodle': ['noodles', 'noodlelover', 'asianfood'],
+        'dumpling': ['dumplings', 'foodie', 'asianfood'],
+        'hotpot': ['hotpot', 'spicyfood', 'chinesefood'],
+        'cooking': ['cooking', 'chef', 'homemade'],
+        'food': ['food', 'foodie', 'delicious'],
+        'spicy': ['spicy', 'hot', 'spicyfood'],
+        'fried': ['fried', 'crispy', 'friedfood'],
+        'soup': ['soup', 'souplover', 'comfortfood'],
+        'sweet': ['sweet', 'dessert', 'treats'],
+        'spring': ['spring', 'springtime', 'seasons'],
+        'autumn': ['autumn', 'fall', 'cozy'],
+        'ancient': ['ancient', 'history', 'mysterious'],
+        'traditional': ['traditional', 'heritage', 'classic'],
+        'festival': ['festival', 'celebration', 'holiday'],
     }
     
     # Build Hashtags list
-    # 1. Start with fundamental Chinese viral tags
-    hash_tags_set = {'#短视频', '#热门', '#中国', '#中国风', '#viral', '#trending'}
+    # 1. Start with fundamental US viral tags
+    hash_tags_set = {'#viral', '#trending', '#fyp', '#foryou', '#explore', '#reels', '#shorts'}
     
     # 2. Add category tags
     for tag in cat_tags:
@@ -309,7 +312,7 @@ def generate_fallback_metadata(filename):
             hash_tags_set.add(f"#{k}")
             
     # Convert set back to list, ensure we don't have duplicates, and limit to ~10 tags
-    ordered_tags = ['#短视频', '#热门', '#中国', '#viral', '#trending']
+    ordered_tags = ['#viral', '#trending', '#fyp', '#reels', '#shorts']
     for tag in sorted(hash_tags_set):
         if tag not in ordered_tags:
             ordered_tags.append(tag)

@@ -35,7 +35,7 @@ def upload_to_youtube(video_path, title, description):
         'snippet': {
             'title': title,
             'description': description,
-            'tags': ['中国', '中国风', '短视频', '热门', 'viral', 'chinese', 'shorts', 'entertainment'],
+            'tags': ['viral', 'trending', 'fyp', 'foryou', 'shorts', 'reels', 'entertainment', 'amazing', 'incredible', 'mustsee'],
             'categoryId': '24' # Entertainment
         },
         'status': {

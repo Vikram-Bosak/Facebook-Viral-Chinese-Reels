@@ -32,8 +32,8 @@ def run_upload(video_data):
             os.remove(edited_video_path)
         return video_data
         
-    # Construct Facebook Caption
-    fb_caption = f"{headline}\n\n#中国 #中国风 #热门 #短视频 #viral\n\n原标题: {title}\n来源: {source_url}"
+    # Construct Facebook Caption (US Audience - English)
+    fb_caption = f"{headline}\n\n#viral #trending #fyp #foryou #reels #shorts\n\nOriginal: {title}\nSource: {source_url}"
     video_data["description"] = fb_caption
 
     delay_seconds = 2

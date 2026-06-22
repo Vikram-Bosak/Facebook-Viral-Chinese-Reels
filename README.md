@@ -1,91 +1,145 @@
-# 🇨🇳 AI 中国视频自动发布系统
+# 🇺🇸 AI US Audience Video Automation System
 
-全自动化的云端短视频发布系统，通过 GitHub Actions 自动将中国风格短视频从 Google Drive 上传至 Facebook Reels 和 YouTube Shorts。
+Fully automated cloud-based system that uploads Chinese viral videos to Facebook Reels and YouTube Shorts, **auto-translated to English** for United States audience.
 
-系统 24/7 自动运行，抓取视频、生成 AI SEO 标题和描述、自动上传，并通过 Telegram 发送成功/失败报告。
+System runs 24/7, fetching Chinese videos, translating them to English, generating AI SEO titles, uploading, and sending reports via Telegram.
 
-## ✨ 功能特性
+## ✨ Features
 
-- **Google Drive 集成**：自动扫描指定文件夹获取新视频。
-- **AI SEO 优化**：使用 OpenAI 根据视频文件名生成热门标题、描述和中文标签。
-- **多平台上传**：同时上传至 Facebook Reels 和 YouTube Shorts。
-- **中国受众时段优化**：发布时间针对中国用户高峰时段优化：
-  - 🌅 早通勤：7:00 - 9:00 (CST)
-  - 🍜 午休：12:00 - 13:00 (CST)
-  - 🌙 晚间黄金：19:00 - 22:00 (CST)
-- **Telegram 报告**：上传成功或失败时即时推送通知（中文标签）。
-- **重复防护与数据库同步**：使用 SQLite 跟踪已上传文件，支持 GitHub Actions 临时运行器。
-- **GitHub Actions 自动调度**：每 4 小时自动运行。
+- **Chinese → English Translation**: Automatically translates Chinese videos with:
+  - English AI voice dubbing (edge-tts)
+  - Dual subtitles (Chinese + English)
+  - Professional translation via OpenAI GPT
+- **Google Drive Integration**: Automatically scans for new Chinese videos.
+- **AI SEO Optimization**: English viral titles, descriptions, and hashtags for US audience.
+- **US Peak Hours Scheduling**: Posts during US Eastern Time prime hours:
+  - 🌅 Morning Commute: 7:00 - 9:00 AM EST
+  - 🍜 Lunch Break: 12:00 - 1:00 PM EST
+  - 🌙 Prime Time: 5:00 - 9:00 PM EST
+- **Multi-Platform Upload**: Facebook Reels + YouTube Shorts simultaneously.
+- **Telegram Reporting**: Instant notifications in English.
+- **Duplicate Prevention & Database Sync**: SQLite tracking with Google Drive sync.
+- **GitHub Actions**: Automated scheduling every 4 hours.
 
-## 🛠️ 安装指南
+## 🛠️ Setup Instructions
 
-### 1. 前置条件
+### 1. Prerequisites
 
-你需要以下服务的账号/密钥：
-- **Facebook 公共主页**：用于上传 Reels。
-- **Facebook 开发者应用**：获取 Graph API 访问令牌。
-- **Google Cloud 控制台**：创建服务账号以访问 Google Drive。
-- **Telegram 机器人**：发送通知。
-- **OpenAI API 密钥**：生成 SEO 内容。
+You need accounts/keys for:
+- **Facebook Page**: To upload Reels (US audience page recommended).
+- **Facebook Developer App**: For Graph API Access Token.
+- **Google Cloud Console**: Service Account for Google Drive access.
+- **Telegram Bot**: For notifications.
+- **OpenAI API Key**: For translation and SEO generation.
 
-### 2. 环境变量 & GitHub Secrets
+### 2. Environment Variables & GitHub Secrets
 
-将 `.env.example` 复制为 `.env` 用于本地测试。
-在 GitHub Actions 中，将以下变量添加为 **Repository Secrets**：
+Copy `.env.example` to `.env` for local testing.
+For GitHub Actions, add these as **Repository Secrets**:
 
-| 变量 | 说明 |
+| Variable | Description |
 |---|---|
-| `FB_ACCESS_TOKEN` | Facebook 公共主页访问令牌（需要 `pages_manage_posts`、`pages_read_engagement`） |
-| `FB_PAGE_ID` | 你的 Facebook 公共主页 ID |
-| `TELEGRAM_BOT_TOKEN` | BotFather 生成的令牌 |
-| `TELEGRAM_CHAT_ID` | 你的 Chat ID（机器人发送消息的位置） |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Google 服务账号密钥的完整 JSON 字符串 |
-| `GOOGLE_DRIVE_FOLDER_ID` | Google Drive 中父文件夹的 ID（从 URL 获取） |
-| `OPENAI_API_KEY` | 你的 OpenAI API 密钥 |
-| `CHINESE_CONTENT_SOURCE` | 中国内容来源（weibo/douyin/bilibili/kuaishou） |
-| `SEO_LANGUAGE` | SEO 语言偏好（默认 zh-CN） |
-| `INCLUDE_CHINESE_SUBTITLES` | 是否包含中文字幕（true/false） |
+| `FB_ACCESS_TOKEN` | Facebook Page Access Token (needs `pages_manage_posts`, `pages_read_engagement`) |
+| `FB_PAGE_ID` | Your Facebook Page ID |
+| `TELEGRAM_BOT_TOKEN` | Token from BotFather |
+| `TELEGRAM_CHAT_ID` | Your Chat ID |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Google Service Account key JSON string |
+| `GOOGLE_DRIVE_FOLDER_ID` | Google Drive parent folder ID |
+| `OPENAI_API_KEY` | Your OpenAI API key |
+| `ENABLE_TRANSLATION` | Set to `true` for Chinese→English translation |
+| `TTS_VOICE` | English voice: `en-US-ChristopherNeural` (default) |
 
-### 3. Google Drive 设置
+### 3. Google Drive Setup
 
-1. 在 Google Drive 中创建主文件夹（例如 `Facebook-Chinese-Reels`），从 URL 获取其 ID。这就是你的 `GOOGLE_DRIVE_FOLDER_ID`。
-2. 将此文件夹共享给你的 Google 服务账号邮箱，给予 **编辑者** 权限。
-3. 脚本会自动在主文件夹内创建 `Pending`、`Uploaded` 和 `Failed` 子文件夹。
-4. 将 `.mp4` 视频放入 `Pending` 文件夹。
+1. Create a main folder (e.g., `Chinese-Videos-US`) and get its ID.
+2. Share with your Service Account email (Editor access).
+3. Script creates `Pending`, `Uploaded`, `Failed` subfolders.
+4. Place Chinese `.mp4` videos in `Pending` folder.
 
-### 4. 本地运行
+### 4. Running Locally
 
-1. 创建虚拟环境：`python -m venv venv`
-2. 激活环境：`venv\Scripts\activate`（Windows）或 `source venv/bin/activate`（Mac/Linux）
-3. 安装依赖：`pip install -r requirements.txt`
-4. 确保系统已安装 FFmpeg。
-5. 在 `.env` 中设置变量。本地运行时，将 `GOOGLE_APPLICATION_CREDENTIALS` 设置为下载的 `service-account.json` 文件路径。
-6. 运行脚本：`python src/scheduler.py`
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Mac/Linux
+# or: venv\Scripts\activate  # Windows
 
-### 5. 通过 GitHub Actions 运行
+# Install dependencies
+pip install -r requirements.txt
 
-将代码推送到 GitHub 并设置好 Repository Secrets 后，`.github/workflows/upload.yml` 中定义的工作流将每 4 小时自动运行。你也可以从 "Actions" 选项卡手动触发。
+# Install Playwright browsers
+playwright install
 
-### 6. 日志与监控
+# Set your variables in .env
+# Make sure ENABLE_TRANSLATION=true for English output
 
-代理将活动日志记录到控制台（stdout）和本地日志文件：
-- 日志位置：`logs/agent.log`
-- 每条日志包含时间戳和日志级别（`INFO`、`WARNING`、`ERROR`），用于跟踪代理操作和 API 交互。
+# Run the scheduler
+python src/scheduler.py
+```
 
-## 📁 项目结构
+### 5. Running via GitHub Actions
+
+Push to GitHub, set Repository Secrets, and the workflow runs every 4 hours automatically.
+
+### 6. How Translation Works
+
+```
+Chinese Video (Google Drive)
+    ↓
+Step 1: Extract Audio (ffmpeg)
+    ↓
+Step 2: Transcribe Chinese → Text (OpenAI Whisper)
+    ↓
+Step 3: Translate Chinese → English (OpenAI GPT)
+    ↓
+Step 4: Generate English Audio (edge-tts)
+    ↓
+Step 5: Merge English Audio + Original Video
+    ↓
+Step 6: Add Dual Subtitles (Chinese + English)
+    ↓
+English Dubbed Video → Upload to Facebook & YouTube
+```
+
+### 7. Configuration Options
+
+```bash
+# Translation settings in .env
+ENABLE_TRANSLATION=true          # Enable/disable translation
+TTS_VOICE=en-US-ChristopherNeural  # English voice
+SUBTITLE_LANGUAGE=dual           # english, chinese, or dual
+
+# Content settings
+CHINESE_CONTENT_SOURCE=douyin    # weibo, douyin, bilibili, kuaishou
+CHINESE_CONTENT_CATEGORY=culture # music, food, travel, comedy, culture
+CHINESE_TARGET_REGION=united_states
+```
+
+## 📁 Project Structure
 
 ```
 Facebook-Viral-Chinese-Reels/
 ├── src/
-│   ├── scheduler.py              # 调度器 - 基于中国时区的发布计划
-│   ├── youtube_uploader.py       # YouTube Shorts 上传器
-│   ├── agent_3_uploader.py       # Facebook/YouTube 上传代理
-│   ├── agent_4_reporter.py       # Telegram 报告代理（中文标签）
-│   ├── facebook_uploader.py      # Facebook Graph API 上传
-│   ├── drive_reader.py           # Google Drive 文件读取
-│   ├── queue_manager.py          # 上传队列管理
-│   └── logger.py                 # 日志配置
-├── .env.example                  # 环境变量模板
-├── requirements.txt              # Python 依赖
-└── README.md                     # 本文件
+│   ├── scheduler.py          # US Eastern Time scheduling
+│   ├── queue_manager.py      # Core workflow with translation
+│   ├── translator.py         # Chinese → English pipeline
+│   ├── seo_generator.py      # US audience SEO
+│   ├── facebook_uploader.py  # Facebook Graph API
+│   ├── youtube_uploader.py   # YouTube Shorts upload
+│   ├── agent_2_editor.py     # NotoSansSC font, 热门 label
+│   ├── agent_3_uploader.py   # English hashtags
+│   ├── agent_4_reporter.py   # English Telegram reports
+│   └── ... (17 files total)
+├── .github/workflows/        # GitHub Actions CI/CD
+├── .env.example              # US audience config
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
 ```
+
+## 📊 Logging
+
+Logs are saved to `logs/agent.log` with timestamps and levels (INFO, WARNING, ERROR).
+
+## 📄 License
+
+MIT License - See `privacy-policy.html` for details.

@@ -15,40 +15,42 @@ from drive_reader import get_drive_service, get_daily_upload_count_from_drive, c
 from health_checker import run_all_health_checks
 from watchdog import update_heartbeat
 
-def get_latest_scheduled_slot_time(cst_now):
+def get_latest_scheduled_slot_time(est_now):
     """
     Computes the start datetime of the latest scheduled slot that should have run.
-    Time slots are optimized for Chinese audience peak hours (CST/UTC+8):
-      - Morning commute: 7:00 - 9:00
-      - Lunch break: 12:00 - 13:00
-      - Evening prime: 19:00 - 22:00
+    Time slots optimized for US audience peak hours (US Eastern Time):
+      - Morning: 7:00 - 9:00 AM (commute)
+      - Lunch: 12:00 - 1:00 PM
+      - Evening: 5:00 - 9:00 PM (prime time)
+      - Late Night: 10:00 - 11:00 PM
     Returns (datetime, media_type).
     """
     SLOTS = [
-        {'hour': 7, 'minute': 0, 'label': '早通勤 (Morning Commute)', 'type': 'reel'},
-        {'hour': 8, 'minute': 30, 'label': '早通勤 (Morning Commute)', 'type': 'photo'},
-        {'hour': 9, 'minute': 0, 'label': '上午 (Mid-Morning)', 'type': 'reel'},
-        {'hour': 12, 'minute': 0, 'label': '午休 (Lunch Break)', 'type': 'reel'},
-        {'hour': 13, 'minute': 0, 'label': '午休 (Lunch Break)', 'type': 'photo'},
-        {'hour': 15, 'minute': 0, 'label': '下午 (Afternoon)', 'type': 'reel'},
-        {'hour': 19, 'minute': 0, 'label': '晚间黄金 (Evening Prime)', 'type': 'reel'},
-        {'hour': 20, 'minute': 0, 'label': '晚间黄金 (Evening Prime)', 'type': 'photo'},
-        {'hour': 21, 'minute': 0, 'label': '晚间黄金 (Evening Prime)', 'type': 'reel'},
-        {'hour': 22, 'minute': 0, 'label': '夜间 (Late Night)', 'type': 'photo'},
-        {'hour': 23, 'minute': 0, 'label': '夜间 (Late Night)', 'type': 'reel'}
+        {'hour': 7, 'minute': 0, 'label': 'Early Morning (Commute)', 'type': 'reel'},
+        {'hour': 8, 'minute': 30, 'label': 'Morning (Commute)', 'type': 'photo'},
+        {'hour': 9, 'minute': 0, 'label': 'Mid-Morning', 'type': 'reel'},
+        {'hour': 12, 'minute': 0, 'label': 'Lunch Break', 'type': 'reel'},
+        {'hour': 13, 'minute': 0, 'label': 'Lunch Break', 'type': 'photo'},
+        {'hour': 15, 'minute': 0, 'label': 'Afternoon', 'type': 'reel'},
+        {'hour': 17, 'minute': 0, 'label': 'Evening Rush', 'type': 'reel'},
+        {'hour': 19, 'minute': 0, 'label': 'Prime Time', 'type': 'reel'},
+        {'hour': 20, 'minute': 0, 'label': 'Prime Time', 'type': 'photo'},
+        {'hour': 21, 'minute': 0, 'label': 'Prime Time', 'type': 'reel'},
+        {'hour': 22, 'minute': 0, 'label': 'Late Night', 'type': 'photo'},
+        {'hour': 23, 'minute': 0, 'label': 'Late Night', 'type': 'reel'}
     ]
 
     latest_slot = None
     for s in SLOTS:
-        slot_dt = cst_now.replace(hour=s['hour'], minute=s['minute'], second=0, microsecond=0)
-        if cst_now >= slot_dt:
+        slot_dt = est_now.replace(hour=s['hour'], minute=s['minute'], second=0, microsecond=0)
+        if est_now >= slot_dt:
             latest_slot = (slot_dt, s['type'])
             
     if latest_slot is not None:
         return latest_slot
     else:
         # Fallback to the last slot of the previous day
-        prev_day = cst_now - timedelta(days=1)
+        prev_day = est_now - timedelta(days=1)
         last_s = SLOTS[-1]
         return (prev_day.replace(hour=last_s['hour'], minute=last_s['minute'], second=0, microsecond=0), last_s['type'])
 
@@ -83,7 +85,7 @@ def validate_env():
 
 def main():
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="AI Facebook Reel Automation Agent Scheduler")
+    parser = argparse.ArgumentParser(description="AI Facebook Reel Automation Agent - US Audience Edition")
     parser.add_argument('--force', action='store_true', help='Force upload bypassing time slot locks')
     args = parser.parse_args()
 
@@ -92,7 +94,7 @@ def main():
     
     update_heartbeat("starting")
     
-    logger.info("Initializing AI Facebook Reel Automation Agent...")
+    logger.info("Initializing AI Facebook Reel Automation Agent (US Audience)...")
     
     if not validate_env():
         logger.error("Environment validation failed. Exiting.")
@@ -134,17 +136,17 @@ def main():
     force_upload = args.force or os.environ.get('FORCE_UPLOAD') == 'true'
 
     if force_upload:
-        logger.info("Force upload enabled. Bypassing CST time slot check.")
+        logger.info("Force upload enabled. Bypassing EST time slot check.")
         media_to_upload = 'reel' if pending_reels > 0 else ('photo' if pending_photos > 0 else None)
         if not media_to_upload:
             logger.info("No media available to force upload.")
             return
     else:
-        # Time slot logic (China Standard Time, UTC+8)
-        cst_now = datetime.now(ZoneInfo('Asia/Shanghai'))
-        logger.info(f"Current time in China Standard Time: {cst_now.strftime('%Y-%m-%d %H:%M %Z')}")
+        # Time slot logic (US Eastern Time)
+        est_now = datetime.now(ZoneInfo('America/New_York'))
+        logger.info(f"Current time in US Eastern Time: {est_now.strftime('%Y-%m-%d %H:%M %Z')}")
 
-        latest_slot_dt, target_media_type = get_latest_scheduled_slot_time(cst_now)
+        latest_slot_dt, target_media_type = get_latest_scheduled_slot_time(est_now)
         latest_slot_dt_utc = latest_slot_dt.astimezone(timezone.utc)
         
         # We need the root folder ID for the target media to check if it was already uploaded
@@ -152,11 +154,11 @@ def main():
 
         # Check if an upload has already occurred in/since the latest slot
         if check_folder_id and has_uploaded_since_datetime(service, check_folder_id, latest_slot_dt_utc):
-            logger.info(f"Already uploaded for latest slot ({latest_slot_dt.strftime('%H:%M %Z')} - {target_media_type}). Skipping.")
-            update_heartbeat("idle", {"message": f"Already uploaded in slot {latest_slot_dt.strftime('%H:%M %Z')}"})
+            logger.info(f"Already uploaded for latest slot ({latest_slot_dt.strftime('%I:%M %p %Z')} - {target_media_type}). Skipping.")
+            update_heartbeat("idle", {"message": f"Already uploaded in slot {latest_slot_dt.strftime('%I:%M %p %Z')}"})
             return
 
-        logger.info(f"No upload detected for latest slot ({latest_slot_dt.strftime('%H:%M %Z')} - {target_media_type}). Triggering!")
+        logger.info(f"No upload detected for latest slot ({latest_slot_dt.strftime('%I:%M %p %Z')} - {target_media_type}). Triggering!")
         
         media_to_upload = target_media_type
         
