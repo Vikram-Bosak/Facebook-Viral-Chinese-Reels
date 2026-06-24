@@ -68,8 +68,12 @@ async def scan_douyin_food_videos():
                 text = await card.inner_text()
                 text_cleaned = ' '.join(text.split())
                 
-                # Check for food related keywords
-                keywords = ["美食", "小吃", "烹饪", "做菜", "食谱", "味道", "烧烤", "海鲜", "水果", "夜市", "葱花饼", "牛肋排"]
+                # Check for food related keywords (reviews, tasting, challenge, recipe/cooking)
+                keywords = [
+                    "探店", "测评", "评测", "试吃", "吃播", "吃饭", "炫饭", "狂吃", "大口吃", "吃货", # Reviews & Tasting / Eating
+                    "挑战", "比赛", "pk", "争霸", # Challenges / Competitions
+                    "做菜", "烹饪", "做法", "食谱", "教程", "中餐", "家常菜", "美食推荐", "做法教程", "教你做" # Recipes & Cooking
+                ]
                 is_food = any(kw in text_cleaned for kw in keywords)
                 
                 if is_food:

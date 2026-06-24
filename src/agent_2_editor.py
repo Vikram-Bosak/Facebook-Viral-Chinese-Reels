@@ -373,6 +373,41 @@ def edit_video(input_vid_path, overlay_img_path, output_vid_path):
         print(f"Error during video editing: {e}")
         return False
 
+def apply_copyright_filters(edited_video_path):
+    print("Applying Anti-Copyright Filters (Speed 1.05x, Crop 5%, Brightness +5%, Contrast +5%, Pitch shift)...")
+    temp_output_path = edited_video_path.replace(".mp4", "_clean.mp4")
+    import subprocess
+    import shutil
+    try:
+        if os.path.exists(temp_output_path):
+            os.remove(temp_output_path)
+            
+        shutil.move(edited_video_path, temp_output_path)
+        
+        # Run FFmpeg to apply speed, crop, color adjustment and pitch filters
+        cmd = [
+            'ffmpeg', '-y',
+            '-i', temp_output_path,
+            '-vf', "setpts=PTS/1.05,crop=w=iw*0.95:h=ih*0.95,scale=iw:ih,eq=brightness=0.05:contrast=1.05:saturation=1.1",
+            '-af', "asetrate=44100*1.05,aresample=44100",
+            edited_video_path
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if res.returncode == 0:
+            print(f"Anti-Copyright filters applied successfully. Final output: {edited_video_path}")
+        else:
+            print(f"Anti-Copyright filter failed: {res.stderr}. Restoring original file.")
+            if os.path.exists(edited_video_path):
+                os.remove(edited_video_path)
+            shutil.move(temp_output_path, edited_video_path)
+            
+        if os.path.exists(temp_output_path):
+            os.remove(temp_output_path)
+    except Exception as e:
+        print(f"Error applying anti-copyright filters: {e}")
+        if os.path.exists(temp_output_path) and not os.path.exists(edited_video_path):
+            shutil.move(temp_output_path, edited_video_path)
+
 def process_video(video_data):
     print("Starting Agent 2: Video Editor")
 
@@ -415,6 +450,9 @@ def process_video(video_data):
                     shutil.copy2(translated_video, edited_video_path)
                     print(f"Bypassed yellow border/Pillow overlay. Final video saved at: {edited_video_path}")
                     
+                    # Apply anti-copyright filters
+                    apply_copyright_filters(edited_video_path)
+                    
                     # Cleanup
                     if raw_video_path != translated_video and os.path.exists(raw_video_path):
                         try: os.remove(raw_video_path)
@@ -437,6 +475,9 @@ def process_video(video_data):
         video_data["editing_status"] = "Success"
         video_data["seo_title"] = headline_text
         video_data["edited_path"] = edited_video_path
+
+        # Apply anti-copyright filters
+        apply_copyright_filters(edited_video_path)
 
         # Cleanup intermediate files
         if os.path.exists(raw_video_path): os.remove(raw_video_path)
