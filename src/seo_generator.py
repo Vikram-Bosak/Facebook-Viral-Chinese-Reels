@@ -74,7 +74,8 @@ def generate_seo_metadata(filename, media_type='reel'):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            "temperature": 0.7
+            "temperature": 0.7,
+            "timeout": 45.0
         }
         if "gpt-" in model:
             params["response_format"] = {"type": "json_object"}

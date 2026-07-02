@@ -172,14 +172,44 @@ def download_video_direct(video_url, output_path):
         print(f"Error downloading video: {e}")
         return False
 
+def is_9_16_ratio(video_path):
+    import subprocess
+    try:
+        cmd = [
+            'ffprobe', '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,height',
+            '-of', 'json', video_path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        info = json.loads(result.stdout)
+        streams = info.get('streams', [])
+        if not streams:
+            return False
+        width = streams[0].get('width')
+        height = streams[0].get('height')
+        if not width or not height:
+            return False
+        ratio = width / height
+        print(f"Video dimensions: {width}x{height}, Aspect Ratio: {ratio:.4f}")
+        # 9:16 is exactly 0.5625. Allow range 0.55 to 0.58
+        return 0.55 <= ratio <= 0.58
+    except Exception as e:
+        print(f"Error checking aspect ratio: {e}")
+        return False
+
 def run_downloader():
     print("Running Downloader: Scanning and filling queue...")
     asyncio.run(scan_douyin_food_videos())
     
-    # Return the first PENDING video in the queue if available
+    # Loop to find the first PENDING video in the queue that has a 9:16 aspect ratio
     queue = load_queue()
-    pending = [item for item in queue if item['status'] == 'PENDING']
-    if pending:
+    while True:
+        pending = [item for item in queue if item['status'] == 'PENDING']
+        if not pending:
+            print("No pending videos left in the queue.")
+            return None
+            
         item = pending[0]
         print(f"Next pending video: {item['title']} ({item['source_url']})")
         
@@ -188,18 +218,37 @@ def run_downloader():
         if video_url:
             local_path = os.path.abspath("workspace/raw_video.mp4")
             if download_video_direct(video_url, local_path):
-                item['local_path'] = local_path
-                item['status'] = 'DOWNLOADED'
-                item['download_status'] = 'Success'
-                # Update status in queue
-                for q_item in queue:
-                    if q_item['id'] == item['id']:
-                        q_item['status'] = 'DOWNLOADED'
-                save_queue(queue)
-                return item
+                # Verify aspect ratio is 9:16
+                if is_9_16_ratio(local_path):
+                    item['local_path'] = local_path
+                    item['status'] = 'DOWNLOADED'
+                    item['download_status'] = 'Success'
+                    # Update status in queue
+                    for q_item in queue:
+                        if q_item['id'] == item['id']:
+                            q_item['status'] = 'DOWNLOADED'
+                    save_queue(queue)
+                    return item
+                else:
+                    print(f"Skipping video ID={item['id']} because aspect ratio is not 9:16.")
+                    item['status'] = 'SKIPPED_ASPECT_RATIO'
+                    item['download_status'] = 'Skipped (Not 9:16)'
+                    for q_item in queue:
+                        if q_item['id'] == item['id']:
+                            q_item['status'] = 'SKIPPED_ASPECT_RATIO'
+                    save_queue(queue)
+                    if os.path.exists(local_path):
+                        os.remove(local_path)
+                    continue  # try the next video in the queue
+                    
         item['download_status'] = 'Failed'
-        return item
-    return None
+        item['status'] = 'FAILED'
+        for q_item in queue:
+            if q_item['id'] == item['id']:
+                q_item['status'] = 'FAILED'
+        save_queue(queue)
+        continue
+
 
 if __name__ == "__main__":
     item = run_downloader()

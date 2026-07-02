@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import shutil
+import html
 
 def send_telegram_message(message):
     bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
@@ -41,17 +42,17 @@ def main():
     else:
         report = {}
         
-    # Default values in case keys are missing
-    video_name = report.get('video_name', 'N/A')
-    download_status = report.get('download_status', 'Failed / Unknown')
-    editing_status = report.get('editing_status', 'N/A')
-    upload_status = report.get('upload_status', 'N/A')
-    seo_title = report.get('seo_title', 'N/A')
-    description = report.get('description', 'N/A')
+    # Default values in case keys are missing (HTML-escaped for safety)
+    video_name = html.escape(report.get('video_name', 'N/A'))
+    download_status = html.escape(report.get('download_status', 'Failed / Unknown'))
+    editing_status = html.escape(report.get('editing_status', 'N/A'))
+    upload_status = html.escape(report.get('upload_status', 'N/A'))
+    seo_title = html.escape(report.get('seo_title', 'N/A'))
+    description = html.escape(report.get('description', 'N/A'))
     
     # Get FB and YT URLs with support for both format styles
-    fb_url = report.get('facebook_url', report.get('fb_url', 'N/A'))
-    yt_url = report.get('youtube_url', report.get('yt_url', 'N/A'))
+    fb_url = html.escape(report.get('facebook_url', report.get('fb_url', 'N/A')))
+    yt_url = html.escape(report.get('youtube_url', report.get('yt_url', 'N/A')))
     
     # Determine YouTube Status
     yt_status = "Success" if "youtube.com" in yt_url or "youtu.be" in yt_url else "Failed / N/A"

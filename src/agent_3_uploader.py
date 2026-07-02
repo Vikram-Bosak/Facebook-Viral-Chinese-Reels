@@ -33,7 +33,34 @@ def run_upload(video_data):
         return video_data
         
     # Construct Facebook Caption (US Audience - English)
-    fb_caption = f"{headline}\n\n#viral #trending #fyp #foryou #reels #shorts\n\nOriginal: {title}\nSource: {source_url}"
+    # Translate original Chinese title to English first for SEO generator
+    print(f"Original Title: {title}")
+    english_title = title
+    try:
+        from deep_translator import GoogleTranslator
+        english_title = GoogleTranslator(source='auto', target='en').translate(title)
+        print(f"Translated Title: {english_title}")
+    except Exception as e:
+        print(f"Failed to translate title: {e}")
+
+    # Generate viral English SEO metadata
+    try:
+        try:
+            from src.seo_generator import generate_seo_metadata, format_caption
+        except ImportError:
+            from seo_generator import generate_seo_metadata, format_caption
+        # Clean title of any bracketed duration info
+        import re
+        clean_title = re.sub(r'^\d{2}:\d{2}\s+\d+\.?\d*万\s*', '', english_title).strip()
+        seo_data = generate_seo_metadata(clean_title, media_type='reel')
+        fb_caption = format_caption(seo_data)
+        headline = seo_data.get('title', clean_title)
+        video_data["seo_title"] = headline
+        print(f"Generated SEO Caption:\n{fb_caption}")
+    except Exception as e:
+        print(f"Failed to generate SEO metadata: {e}")
+        fb_caption = f"{headline or english_title}\n\n#viral #trending #fyp #foryou #reels #shorts"
+
     video_data["description"] = fb_caption
 
     delay_seconds = 2
@@ -42,7 +69,7 @@ def run_upload(video_data):
 
     # Facebook Upload
     try:
-        print(f"Uploading to Facebook with caption: {fb_caption}")
+        print(f"Uploading to Facebook with caption:\n{fb_caption}")
         fb_url = upload_reel(edited_video_path, fb_caption)
         print(f"Successfully uploaded to Facebook: {fb_url}")
         
@@ -55,18 +82,24 @@ def run_upload(video_data):
         
     # YouTube Upload
     if video_data.get("upload_status") == "Success":
-        try:
-            print("Waiting 2 seconds before uploading to YouTube Shorts...")
-            time.sleep(2)
-            
-            yt_title = title[:100] # YouTube title limit is 100 chars
-            yt_desc = f"{fb_caption}\n#shorts"
-            
-            yt_url = upload_to_youtube(edited_video_path, yt_title, yt_desc)
-            video_data["yt_url"] = yt_url
-        except Exception as e:
-            print(f"Failed to upload to YouTube: {e}")
-            video_data["yt_err"] = str(e)
+        # Check if credentials exist
+        has_yt_creds = os.environ.get('YOUTUBE_TOKEN_JSON') or os.path.exists('youtube_token.json')
+        if has_yt_creds:
+            try:
+                print("Waiting 2 seconds before uploading to YouTube Shorts...")
+                time.sleep(2)
+                
+                yt_title = title[:100] # YouTube title limit is 100 chars
+                yt_desc = f"{fb_caption}\n#shorts"
+                
+                yt_url = upload_to_youtube(edited_video_path, yt_title, yt_desc)
+                video_data["yt_url"] = yt_url
+            except Exception as e:
+                print(f"Failed to upload to YouTube: {e}")
+                video_data["yt_err"] = str(e)
+        else:
+            print("YouTube credentials (YOUTUBE_TOKEN_JSON or youtube_token.json) not found. Skipping YouTube upload.")
+            video_data["yt_url"] = "Skipped (Not configured)"
         
     # Cleanup
     if os.path.exists(edited_video_path):

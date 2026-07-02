@@ -845,17 +845,17 @@ def trim_video_to_59s(video_path, output_dir):
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         duration = float(res.stdout.strip())
         
-        if duration > 59.0:
-            logger.info(f"Video is {duration:.2f}s long. Trimming to 59s...")
+        if duration > 179.0:
+            logger.info(f"Video is {duration:.2f}s long. Trimming to 179s (2m 59s)...")
             base = os.path.basename(video_path)
-            trimmed_path = os.path.join(output_dir, f"trimmed_59s_{base}")
+            trimmed_path = os.path.join(output_dir, f"trimmed_179s_{base}")
             
             # Trim using ffmpeg (re-encode to avoid keyframe issues)
             trim_cmd = [
                 'ffmpeg', '-y',
                 '-i', video_path,
                 '-ss', '0',
-                '-t', '59',
+                '-t', '179',
                 '-c:v', 'libx264',
                 '-c:a', 'aac',
                 '-crf', '18',
@@ -974,9 +974,9 @@ def translate_video(video_path, output_dir=None, burn_subtitles=True, subtitle_l
             if subtitled_video:
                 final_video = subtitled_video
 
-        # Clean up temp files (keep final outputs)
+        # Clean up temp files (keep final outputs, and preserve bg_music_path)
         for f in temp_files:
-            if f != final_video and os.path.exists(f):
+            if f != final_video and f != bg_music_path and os.path.exists(f):
                 try:
                     os.remove(f)
                 except:
