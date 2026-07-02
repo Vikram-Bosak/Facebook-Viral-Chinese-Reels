@@ -247,9 +247,10 @@ def _translate_batch(texts):
             numbered_texts = "\n".join([f"{i+1}. {t}" for i, t in enumerate(texts)])
 
             system_prompt = (
-                "You are an expert translator specializing in translating viral Chinese social media videos (reels/shorts) to English for a US audience. "
-                "Translate the following segments into highly natural, engaging, and colloquial English. "
-                "Preserve the emotional tone, humor, and drama of the original speaker. "
+                "You are an expert funny translator and creative script writer specializing in translating Chinese viral food videos for a US audience. "
+                "Your task is to translate and adapt the following segments into highly natural, engaging, and colloquial American English. "
+                "IMPORTANT: Filter out all duplicate loop/stuttering words like 'I I I I' or 'eat eat eat' that happen due to video edits or sound effects. Restructure them into clean, engaging sentences. "
+                "Make the script funny, dramatic, and interesting, matching the timing of the original segments. "
                 "Ensure the translation is concise so that it can be spoken in a similar duration as the original Chinese segment. "
                 "Return ONLY the translations, one per line, numbered to match the input format."
             )
